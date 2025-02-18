@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Generate Invoice</title>
+    <th:block th:insert="~{layout/header}"></th:block>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+<div class="container mt-4">
+    <h2>Generate Invoice</h2>
+
+    <!-- Select Customer -->
+    <label for="customerId">Select Customer:</label>
+    <select name="customerId" id="customerId" class="form-select">
+        <option th:each="customer : ${customers}" th:value="${customer.id}" th:text="${customer.name}"></option>
+    </select>
+
+    <!-- Search Product -->
+    <label for="productSearch">Search Product:</label>
+    <input type="text" id="productSearch" class="form-control" placeholder="Search for products...">
+    <ul id="productList" class="list-group"></ul>
+
+    <!-- Selected Products Table -->
+    <h4 class="mt-3">Selected Products</h4>
+    <table class="table" id="selectedProductsTable">
+        <thead>
+            <tr>
+                <th>Product</th><th>Quantity</th><th>Price</th><th>Total</th><th>Action</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <h4>Total Amount: ₹<span id="totalAmount">0.00</span></h4>
+
+    <!-- Generate Invoice Button -->
+    <form th:action="@{/billings/invoice}" method="post">
+        <input type="hidden" name="customerId" id="hiddenCustomerId">
+        <input type="hidden" name="productData" id="hiddenProductData">
+        <button type="submit" class="btn btn-primary mt-3">Generate Invoice</button>
+    </form>
+</div>
+
+<!-- JavaScript for Dynamic Product Selection -->
+<script>
+    let products = [
+      
+    ];
+	
+	function loadProducts() {
+	    $.get("/products/list1", function (data) {
+	        console.log("Products from API:", data); // Debug API response
+	        if (Array.isArray(data)) {
+	            products = data;  // Only assign if it's an array
+	        } else {
+	            console.error("API did not return an array!", data);
+	        }
+	    }).fail(function (xhr, status, error) {
+	        console.error("Error fetching products:", status, error);
+	    });
+	}
+
+	
+
+    $(document).ready(function () {
+		
+		loadProducts(); // Load products from DB when the page loads
+        let selectedProducts = [];
+        
+        // Product Search
+        $("#productSearch").on("input", function () {
+            let searchValue = $(this).val().toLowerCase();
+			
+			if (!Array.isArray(products)) {
+			       console.error("Products not loaded yet!", products);
+			       return;  // Exit if products are not loaded
+			   }
+            let filteredProducts = products.filter(p => p.name.toLowerCase().includes(searchValue));
+            
+            let listHtml = filteredProducts.map(p => `
+                <li class="list-group-item product-item" 
+                    data-id="${p.id}" 
+                    data-name="${p.name}" 
+                    data-price="${p.price}">
+                    ${p.name} - ₹${p.price}
+                </li>`).join("");
+            
+            $("#productList").html(listHtml);
+        });
+		
+		// When the input loses focus, hide the product list
+		   $("#productSearch").blur(function () {
+		       setTimeout(() => { $("#productList").empty(); }, 200); // Delay to allow item selection
+		   });
+
+        // Select Product
+        $(document).on("click", ".product-item", function () {
+            let productId = $(this).data("id");
+            let productName = $(this).data("name");
+            let productPrice = parseFloat($(this).data("price"));
+            
+            let existingProduct = selectedProducts.find(p => p.id === productId);
+
+            if (!existingProduct) {
+                selectedProducts.push({ id: productId, name: productName, price: productPrice, quantity: 1 });
+                updateSelectedProductsTable();
+            }
+        });
+
+        // Update Quantity
+        $(document).on("input", ".quantity-input", function () {
+            let productId = parseInt($(this).data("id"));
+            let newQuantity = parseInt($(this).val());
+            
+            let product = selectedProducts.find(p => p.id === productId);
+            if (product) {
+                product.quantity = newQuantity;
+                updateSelectedProductsTable();
+            }
+        });
+
+        // Remove Product
+        $(document).on("click", ".remove-product", function () {
+            let productId = parseInt($(this).data("id"));
+            selectedProducts = selectedProducts.filter(p => p.id !== productId);
+            updateSelectedProductsTable();
+        });
+
+		function updateSelectedProductsTable() {
+		    let totalAmount = 0;
+		    let tableHtml = selectedProducts.map(p => {
+		        let total = p.price * p.quantity;
+		        totalAmount += total;
+		        return `<tr>
+		            <td>${p.name}</td>
+		            <td><input type="number" class="quantity-input" data-id="${p.id}" value="${p.quantity}" min="1"></td>
+		            <td>₹${p.price}</td>
+		            <td>₹${total.toFixed(2)}</td>
+		            <td><button type="button" class="btn btn-danger remove-product" data-id="${p.id}">Remove</button></td>
+		        </tr>`;
+		    }).join("");
+
+		    $("#selectedProductsTable tbody").html(tableHtml);
+		    $("#totalAmount").text(totalAmount.toFixed(2));
+
+		    $("#hiddenCustomerId").val($("#customerId").val());
+			// Fix: Convert "id" to "productId"
+			  let formattedProducts = selectedProducts.map(p => ({
+			      productId: p.id,  // Change from id → productId
+			      productName: p.name,
+			      price: p.price,
+			      quantity: p.quantity
+			  }));
+		    $("#hiddenProductData").val(JSON.stringify(formattedProducts)); // Store product details as JSON
+		}
+
+    });
+</script>
+
+<th:block th:insert="~{layout/footer}"></th:block>
+</body>
+</html>

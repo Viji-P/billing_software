@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>Billing System</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+
+</head>
+<body>
+	
+	<script>
+	    function confirmLogout() {
+	        return confirm("Are you sure you want to logout?");
+	    }
+	</script>
+	
+    <nav class="navbar navbar-expand-lg navbar-dark bg-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/home">Billing System</a>
+			<div class="collapse navbar-collapse d-flex justify-content-between">
+			        <ul class="navbar-nav ms-auto d-flex align-items-center">
+                    <li class="nav-item"><a class="nav-link" href="/customers/list">Customers</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/products/list">Products</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/billings/generate">Generate Bill</a></li>
+					<div class="dropdown ms-5" th:if="${username != null}">
+					    <button class="btn btn-dark rounded-circle p-0" type="button" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+					        <i class="fas fa-user-circle fa-lg"></i> <!-- Small & Simple User Icon -->
+					    </button>
+					    <ul class="dropdown-menu dropdown-menu-end text-center" aria-labelledby="profileDropdown">
+					        <li class="dropdown-item disabled fw-bold" th:text="${username}">User</li>
+					        <li><hr class="dropdown-divider"></li>
+					        <li><a class="dropdown-item text-danger" onclick="return confirmLogout();" href="/login">Logout</a></li>
+					    </ul>
+					</div>
+                </ul>
+				
+            </div>
+		
+        </div>
+    </nav>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+</body>
+</html>
